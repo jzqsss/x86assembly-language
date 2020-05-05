@@ -1,0 +1,831 @@
+第一题
+enterline macro
+	mov dl,13
+	mov ah,2
+	int 21h
+	mov dl,10
+	mov ah,2
+	int 21h
+endm
+DATAS SEGMENT
+    ;此处输入数据段代码 
+   
+     STRING1 DB 'please enter your score with 3 numbers(96=096)$'
+      SCORE DB ?,?,?,'$'
+      MsgError DB'INVALID SCORE$'
+DATAS ENDS
+
+STACKS SEGMENT
+    ;此处输入堆栈段代码
+    DW  100H DUP(0)
+STACKS ENDS
+
+CODES SEGMENT
+    ASSUME CS:CODES,DS:DATAS,SS:STACKS
+START:
+    MOV AX,DATAS
+    MOV DS,AX
+    ;此处输入代码段代码
+NEXT:
+    MOV DX,OFFSET STRING1
+    MOV AH,09H;输出提示信息
+    INT 21H    
+    enterline;回车
+     ;读取成绩
+    mov CX,3
+	mov  BX,offset SCORE
+INPUT:
+	MOV AH,01H
+	INT 21H
+	MOV [BX],AL
+	CMP BYTE PTR[BX],'0'
+	JB ERROR
+	CMP BYTE PTR[BX],'9'
+	JA ERROR
+	INC BX
+LOOP  INPUT
+ CMP SCORE ,'1'
+ JE F1
+ CMP SCORE, '0'
+ JE F2
+ JMP ERROR
+ F1:
+ 	CMP SCORE[1] ,'0'
+ 	JNE  ERROR
+ 	CMP SCORE[2] ,'0'
+ 	JNE  ERROR
+ 	JMP FLAG1
+ F2:CMP SCORE[1] ,'6'
+ 	JB FLAG4
+ 	CMP SCORE[1], '7'
+ 	JB FLAG3
+ 	CMP SCORE[1], '9'
+ 	JAE FLAG1
+ 	CMP SCORE[1] ,'8'
+ 	JNE F3
+ 	CMP SCORE[2], '5'
+ 	JAE  FLAG1
+ F3:
+ 	JMP FLAG2
+ 	
+ 	
+  FLAG1:MOV DL,'A'
+  		JMP SHOW
+   FLAG2:MOV DL,'B'
+  		JMP SHOW
+   FLAG3:MOV DL,'C'
+  		JMP SHOW
+  FLAG4:MOV DL,'D'
+  		JMP SHOW	
+    ;输入错误
+Error:
+	enterline
+	lea dx, MsgError
+	mov ah, 9
+	int 21h
+	enterline
+	jmp NEXT
+	;结束
+	 SHOW: MOV AH,02H
+      INT 21H  
+     MOV AH,4CH
+    INT 21H
+
+CODES ENDS
+    END START
+
+
+
+
+第二题
+enterline macro
+	mov dl,13
+	mov ah,2
+	int 21h
+	mov dl,10
+	mov ah,2
+	int 21h
+endm
+data segment
+   m1 db 'Please enter a string of lowercase characters and end with a carriage return:',0dh,0ah,'$'
+   m2 db 'the result is :',0dh,0ah,'$'
+   m3 db 'Invalid Input!',0dh,0ah,'$'
+data ends
+
+stack1 segment para stack
+		dw 64h dup(0)
+stack1 ends
+
+coseg segment
+  assume cs:coseg,ds:data
+
+start:
+  mov ax,data
+  mov ds,ax
+  mov cx,0
+  mov dx,offset m1
+  mov ah,09h
+  int 21h
+
+input:
+  mov ah,01h	;输入
+  int 21h
+  cmp al,0dh    ;判断是否为回车
+  jz continue
+  cmp al,'a'    ;要求必须是小写字母
+  jb error
+  cmp al,'z'
+  ja error		
+  push ax
+  inc cx
+  jmp input
+
+continue:
+  mov dx,offset m2
+  mov ah,09h
+  int 21h 
+
+output:
+  pop dx;出栈
+  mov ah,02h
+  int 21h
+  cmp cx,0;防止第一个键就输入回车
+  jz exit
+  loop output
+  jmp exit
+  
+ error:
+  mov dx,offset m3
+  mov ah,09h
+  int 21h 
+  jmp start
+exit:  
+  mov ah,4ch
+  int 21h
+coseg ends
+  end start
+
+
+
+第三题
+enterline macro
+	mov dl,13
+	mov ah,2
+	int 21h
+	mov dl,10
+	mov ah,2
+	int 21h
+endm
+data segment
+    m1 db 'please enter the first  number:',0dh,0ah,'$'
+    m2 db 'please enter the second number:',0dh,0ah,'$'
+    m3 db 'gong yue shu:',0dh,0ah,'$'
+    m4 db 'num1/sum is:',0dh,0ah,'$'
+    m5 db 'num2/sum is:',0dh,0ah,'$'
+    m6 db  '.$'  
+    m7 db 'invalid input'  ,0dh,0ah,'$'
+    x dw ?
+    y dw ?
+    sum dw ?
+data ends
+
+code segment
+    assume cs:code,ds:data
+
+BEGIN:
+        mov ax,data
+        mov ds,ax
+        mov ax,offset m1
+        call print
+        call enternumber
+        
+        mov bx,ax
+        mov x,bx
+        mov sum,bx
+        
+        ;	输入第一个数
+        mov ax,offset m2
+        call print
+        call enternumber
+    
+        
+        mov cx,ax
+        mov y,cx
+        add sum,cx
+        
+        call find
+        mov ax,offset m3
+        call print
+        mov ax,cx
+         
+        mov bl,al
+        mov bh,1
+       
+        gongyue:
+            mov al,bl
+            xor ah,ah
+            div bh
+            cmp ah,0  ;最大公约数除bh余数
+            jnz next2 ;不为0跳转
+            mov al,bh
+            aam
+            mov cx,ax
+            add ch,30h
+            mov dl,ch
+            mov ah,2
+            int 21h
+            add cl,30h
+            mov dl,cl
+            mov ah,2
+            int 21h
+           enterline
+            
+        next2:
+            inc bh
+            cmp bl,bh
+            jl continue		;最大公约数与bh比较小于则跳转
+            jmp gongyue
+       
+        continue:
+         call zhanbi
+         Jmp exit
+error:
+	mov ax,offset m7
+        call print
+	jmp BEGIN
+	
+exit:
+        mov ah,4ch
+        int 21h
+        
+
+;打印字符串
+
+    print proc near
+    	
+    	mov dx,ax
+    	mov ah,09h
+    	int 21h
+    	ret
+
+    print endp
+    
+    enternumber proc near
+    	fir:
+    	mov ah,01h
+    	int 21h
+    	mov dh,al
+    	cmp al,'0'
+    	jb eor
+    	cmp al,'9'
+    	ja eor
+    	sub dh,30h
+    	
+    	mov ah,01h
+    	int 21h
+    	cmp al,'0'
+    	jb eor
+    	cmp al,'9'
+    	ja eor
+    	cmp al,0dh
+    	jz next1
+    	sub al,30h
+    	shl dh,1
+    	mov dl,dh
+    	shl dh,1
+    	shl dh,1
+    	add dh,dl
+    	add dh,al
+    	
+    	next1:
+    	    mov cl,dh
+    	   enterline
+    	    mov al,cl
+    	    xor ah,ah
+    	ret
+    	jmp go
+    	eor:
+    	 mov ax,offset m7
+        call print
+    	jmp fir
+    	go:
+    enternumber endp
+    
+   find proc near
+   	
+   	cmp bx,cx
+   	jnl first  ;不小于则跳转
+   	xchg bx,cx	;否则交换
+   	first:
+   	    xor dx,dx;0
+   	    mov ax,bx
+   	    div cx
+   	    cmp dx,0
+   	    jz equal	;余数为0则跳转
+   	    mov bx,cx
+   	    mov cx,dx
+   	    jmp first
+   	    
+   	equal:
+   	    ret
+   find endp
+   ;输入x和y和sum
+   ;输出：打印占比的地方
+   zhanbi proc near
+   pushf
+   mov ax,offset m4
+        call print
+        mov al,byte ptr x
+        mov bh,100
+        mul bh
+        mov bl,byte ptr sum
+        div bl
+        mov bl,al;100*X/sum=bl
+     
+      	mov cl,ah  ;存储余数
+        call zhanbiprint
+        
+        mov ax,offset m6
+        call print ;打印小数点
+        
+        mov bl,cl
+        
+        call zhanbiprint
+
+        mov dl,'%'
+        mov ah,02h
+        int 21h
+        
+        enterline
+        mov ax,offset m5
+        call print
+        
+        mov al,byte ptr y
+        mov bh,100
+        mul bh
+        mov bl,byte ptr sum
+        div bl
+        mov bl,al
+       
+        mov cl,ah
+        call zhanbiprint
+        
+        mov ax,offset m6
+        call print
+        
+        mov bl,cl
+        call zhanbiprint
+        mov dl,'%'
+        mov ah,02h
+        int 21h
+        popf
+   ret
+   zhanbi endp
+ 
+   zhanbiprint proc near  ;10进制转阿斯克码，打印两位数字
+   		 mov ah,0
+  		mov al,bl
+   	    mov bh,10
+   	    div bh
+   	    mov bl,ah
+   	    mov dl,al
+   	    cmp dl,0
+   	    jz jump2
+   	    add dl,30h
+   	    mov ah,02
+   	    int 21h
+   	jump2:
+   	    mov dl,bl
+   	    add dl,30h
+   	    mov ah,02h
+   	    int 21h 
+   	ret
+
+   zhanbiprint endp
+code ends
+end begin 
+
+
+
+
+
+
+第四题
+enterline macro
+	mov dl,13
+	mov ah,2
+	int 21h
+	mov dl,10
+	mov ah,2
+	int 21h
+endm
+DATAS SEGMENT
+	m1 db 'Decimal$'
+	m2 db 'Hexadecimal$'
+	m3 db 'Terminal display$'
+    ;此处输入数据段代码  
+DATAS ENDS
+
+STACKS SEGMENT
+    ;此处输入堆栈段代码
+STACKS ENDS
+
+CODES SEGMENT
+    ASSUME CS:CODES,DS:DATAS,SS:STACKS
+START:
+    MOV AX,DATAS
+    MOV DS,AX
+    mov cx,0
+    mov ax,offset m1
+    call printline
+    call printkg
+    mov ax,offset m2
+    call printline
+    call printkg
+    mov ax,offset m3
+    call printline
+    enterline
+    
+begin:
+	
+	mov ax,cx
+	call printNumToAscii
+	mov dl,9
+	call print;输出制表符
+	mov ax,cx
+	call printNum16
+	mov dl,9
+	call print;输出制表符
+	mov dl,cl
+	call print
+	enterline
+	inc cx
+	cmp cx,60
+		jbe begin  
+   jmp EXIT;结束
+    ;子程序：打印
+    ;将要显示字符的ascii码存入DL
+PRINT proc
+	pushf
+	push ax
+	mov ah,02h
+	int 21h
+	pop ax
+	popf
+	ret
+PRINT endp
+	;子程序：将要打印的数(真值)放在al中，将其转换为ascii值以打印出真值(10进制)
+printNumToAscii proc
+	pushf
+	push dx
+	push cx
+	push bx
+	mov cx,-1
+	push cx;flag of ending
+qushang:
+   	xor dx,dx
+	mov bx,10
+	div bx
+	push dx
+	cmp ax,0
+	jne qushang
+	mov cx,-1
+	xor dx,dx
+printt:
+	pop ax
+	cmp ax,-1
+	je flag2
+	mov dx,ax
+	add dx,'0'
+	call print
+	jmp printt	
+flag2:
+	pop bx
+	pop cx
+	pop dx
+	popf
+	ret
+printNumToAscii endp
+;子程序：将要打印的数(真值)放在al中，将其转换为ascii值以打印出真值(16进制)
+printNum16 proc
+	pushf
+	push dx
+	push cx
+	push bx
+	mov cx,-1
+	push cx;flag of ending
+qushang1:
+   	xor dx,dx
+	mov bx,16
+	div bx
+	push dx
+	cmp ax,0
+	jne qushang1
+	mov cx,-1
+	xor dx,dx
+printt:
+	pop ax
+	cmp ax,-1
+	je out1
+	cmp ax,10
+	jb flag1
+	add ax,7
+flag1:	
+	mov dx,ax
+	add dx,'0'
+	call print
+	jmp printt	
+out1:
+	pop bx
+	pop cx
+	pop dx
+	popf
+	ret
+printNum16 endp
+ printline proc near
+    	push dx
+    	mov dx,ax
+    	mov ah,09h
+    	int 21h
+    	pop dx
+    	ret
+
+printline endp
+printkg proc
+	push ax
+	push dx
+	mov dl,20h
+	mov ah,02h
+	int 21h
+	pop dx
+	pop ax
+	ret
+printkg endp
+EXIT:
+    MOV AH,4CH
+    INT 21H
+CODES ENDS
+    END START
+
+
+
+
+
+
+
+
+
+第五题
+
+DATAS SEGMENT
+    ;此处输入数据段代码  
+	
+	 NUM   DB 4                ;准备接收3个字符.
+    NNN   DB ?                  ;用于存放实际输入的个数.
+    BUFFER   DB 4 DUP(?)         ;3字节的空间.
+    restore dw 10 dup(?)
+    m db '$'
+    m1 db 'input a number:',0dh,0ah,'$'
+    m2 db 'invalid input,please input again',0dh,0ah,'$'
+
+DATAS ENDS
+
+STACKS SEGMENT
+    ;此处输入堆栈段代码
+STACKS ENDS
+
+CODES SEGMENT
+    ASSUME CS:CODES,DS:DATAS,SS:STACKS
+START:
+    MOV AX,DATAS
+    MOV DS,AX
+    ;此处输入代码段代码
+call inputten
+call printhh
+	call sort
+	call output
+	call printhh
+ 	jmp START
+ 	
+ 	;子程序，读入1个数字，将其存入ax
+ input proc	
+ 	pushf
+ 	
+ 	push bx
+ 	push cx
+ 	push dx
+ 	push si
+inputstart:
+	mov ax,offset m1
+	call printline 
+inputrestart:
+ 	mov dx,offset NUM
+    mov ah,0ah
+    int 21h
+    lea si,NNN
+    xor cx,cx
+    mov cl,[si]
+    xor ax,ax
+    xor bx,bx
+    xor dx,dx
+    
+ inputturnnum:
+ 	mov bl,10
+ 	mul bl;al乘10
+ 	inc si
+ 	mov dl,[si]
+ 	
+ 	cmp dl,'0'
+ 	jb inputexit
+ 	cmp dl,'9'
+ 	ja inputexit
+ 	sub dl,'0'
+ 	add ax,dx
+ 	loop inputturnnum
+ 	cmp ax,10
+ 	jb inputexit
+ 	jmp inputend
+inputexit:
+	mov ax,offset m2
+	call printline 
+	jmp inputrestart
+inputend:	
+	pop si
+	pop dx
+	pop cx
+	pop bx    
+    popf
+    ret
+input endp
+inputten proc;读取10个数字，将其存入restore里
+	pushf
+	push si
+	push dx
+	push cx
+	push bx
+	push ax
+	lea si,restore
+	mov cx,10
+inputtenstart:
+	call input
+	mov [si],ax
+	add si,2
+	call printhh
+	loop inputtenstart
+	pop ax
+	pop bx
+	pop cx
+	pop dx
+	pop si
+	popf
+	ret
+inputten endp
+output proc
+	pushf
+	push si
+	push cx
+	push ax
+	
+	lea si,restore
+	mov cx,10
+outputstart:
+	mov ax,[si]
+	call printNumToAscii
+	add si,2
+	call printkg
+	loop outputstart
+	pop ax
+	pop cx
+	pop si
+	popf
+	ret
+output endp
+sort proc;将数字放好后（放在restore里），对其排序
+	pushf
+	lea si, restore
+	mov cx,9
+	mov dx,9
+sortstart:
+	
+	call sortson
+	
+	
+	loop sortstart
+	popf
+	ret
+sort endp
+sortson proc;将偏移量放到si里，函数对于剩下的元素进行排序
+	pushf
+	push cx
+	
+	lea si,restore
+sortsonstart:
+	mov dx,[si]
+	cmp dx,[si+2]
+	ja jiaohuan
+	jmp continue
+jiaohuan:
+	xchg dx,[si+2]
+	mov [si],dx
+continue:
+	add si,2
+	loop sortsonstart
+	pop cx
+	popf
+	ret
+sortson endp
+	;子程序，打印
+    ;将要显示字符的ascii码存入DL
+PRINT proc
+	pushf
+	push ax
+	mov ah,02h
+	int 21h
+	pop ax
+	popf
+	ret
+PRINT endp
+;子程序：将要打印的数(真值)放在al中，将其转换为ascii值以打印出真值(10进制)
+printNumToAscii proc
+	pushf
+	push dx
+	push cx
+	push bx
+	mov cx,-1
+	push cx;flag of ending
+printNumToAsciiqushang:
+   	xor dx,dx
+	mov bx,10
+	div bx
+	push dx
+	cmp ax,0
+	jne printNumToAsciiqushang
+	mov cx,-1
+	xor dx,dx
+printNumToAsciiprintt:
+	pop ax
+	cmp ax,-1
+	je printNumToAsciiflag2
+	mov dx,ax
+	add dx,'0'
+	call print
+	jmp printNumToAsciiprintt	
+printNumToAsciiflag2:
+	pop bx
+	pop cx
+	pop dx
+	popf
+	ret
+printNumToAscii endp
+ printline proc near
+    	push dx
+    	mov dx,ax
+    	mov ah,09h
+    	int 21h
+    	pop dx
+    	ret
+
+printline endp
+printhh proc
+	push ax
+	push dx
+	mov dl,10
+	mov ah,02h
+	int 21h
+	pop dx
+	pop ax
+	ret
+printhh endp
+printkg proc
+	push ax
+	push dx
+	mov dl,20h
+	mov ah,02h
+	int 21h
+	pop dx
+	pop ax
+	ret
+printkg endp
+exit:
+    MOV AH,4CH
+    INT 21H
+CODES ENDS
+    END START
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
